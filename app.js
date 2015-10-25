@@ -19,6 +19,7 @@ var app = express();
 
 jwt.secret     = 'disismuhs3cret'
 
+//test
 
 // uncomment after placing your favicon in /public
 //app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
