@@ -190,6 +190,11 @@ if (app.get('env') === 'production') {
     app.use('/styles', express.static(__dirname + '/dist/styles'));
     app.use('/img', express.static(__dirname + '/dist/img'));
 
+    app.use('/robots.txt', function(req, res, next) {
+        // Just send the index.html for other files to support HTML5Mode
+        res.sendFile('/dist/robots.txt', { root: __dirname });
+    });
+
     app.all('/*', function(req, res, next) {
         // Just send the index.html for other files to support HTML5Mode
         res.sendFile('/dist/index.html', { root: __dirname });
