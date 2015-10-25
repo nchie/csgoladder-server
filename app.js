@@ -45,8 +45,8 @@ app.use(function(req,res,next){
 app.use('/api', api);
 
 passport.use(new SteamStrategy({
-    returnURL: 'http://localhost:3000/auth/steam/return',
-    realm: 'http://localhost:3000/',
+    returnURL: 'http://188.226.176.161/auth/steam/return',
+    realm: 'http://188.226.176.161/',
     apiKey: 'A897DA262595847694E3304C6A93219D',
     passReqToCallback: true
   },

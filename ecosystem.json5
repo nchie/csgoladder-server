@@ -19,7 +19,7 @@
       user : "pm2",
       host : "188.226.176.161",
       ref  : "origin/master",
-      repo : "git@bitbucket.org:aejt91/csgowebapp.git",
+      repo : "git@bitbucket.org:aejt91/csgoladder-server.git",
       path : "/srv/csgoladder/production",
       "post-deploy" : "pm2 startOrRestart ecosystem.json5 --env production"
     },
@@ -27,7 +27,7 @@
       user : "pm2",
       host : "188.226.176.161",
       ref  : "origin/master",
-      repo : "git@bitbucket.org:aejt91/csgowebapp.git",
+      repo : "git@bitbucket.org:aejt91/csgoladder-server.git",
       path : "/srv/csgoladder/dev",
       "post-deploy" : "pm2 startOrRestart ecosystem.json5 --env dev",
       env  : {
