@@ -1,0 +1,38 @@
+{
+  apps : [
+
+    // First application
+    {
+      name      : "csgoladder",
+      script    : "bin/www",
+      env: {
+        COMMON_VARIABLE: "true"
+      },
+      env_production : {
+        NODE_ENV: "production"
+      }
+    }
+  ],
+  
+  deploy : {
+    production : {
+      user : "pm2",
+      host : "188.226.176.161",
+      ref  : "origin/master",
+      repo : "git@bitbucket.org:aejt91/csgowebapp.git",
+      path : "/srv/csgoladder/production",
+      "post-deploy" : "pm2 startOrRestart ecosystem.json5 --env production"
+    },
+    dev : {
+      user : "pm2",
+      host : "188.226.176.161",
+      ref  : "origin/master",
+      repo : "git@bitbucket.org:aejt91/csgowebapp.git",
+      path : "/srv/csgoladder/dev",
+      "post-deploy" : "pm2 startOrRestart ecosystem.json5 --env dev",
+      env  : {
+        NODE_ENV: "dev"
+      }
+    }
+  }
+}
