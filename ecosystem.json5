@@ -5,6 +5,9 @@
     {
       name      : "csgoladder",
       script    : "bin/www",
+      instances : '0',
+      exec_mode : 'cluster',
+
       env: {
         COMMON_VARIABLE: "true"
       },
@@ -21,17 +24,9 @@
       ref  : "origin/master",
       repo : "git@bitbucket.org:aejt91/csgoladder-server.git",
       path : "/srv/csgoladder/production",
-      "post-deploy" : "pm2 startOrRestart ecosystem.json5 --env production"
-    },
-    dev : {
-      user : "pm2",
-      host : "188.226.176.161",
-      ref  : "origin/master",
-      repo : "git@bitbucket.org:aejt91/csgoladder-server.git",
-      path : "/srv/csgoladder/dev",
-      "post-deploy" : "pm2 startOrRestart ecosystem.json5 --env dev",
+      "post-deploy" : "pm2 startOrRestart ecosystem.json5 --env production",
       env  : {
-        NODE_ENV: "dev"
+        NODE_ENV: "production"
       }
     }
   }
