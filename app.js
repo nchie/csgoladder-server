@@ -19,7 +19,11 @@ var app = express();
 
 jwt.secret     = 'disismuhs3cret'
 
-//test
+var realm = 'http://127.0.0.1:3000/';
+
+if (app.get('env') === 'production') {
+  realm = 'http://188.226.176.161/';
+}
 
 // uncomment after placing your favicon in /public
 //app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
@@ -45,8 +49,8 @@ app.use(function(req,res,next){
 app.use('/api', api);
 
 passport.use(new SteamStrategy({
-    returnURL: 'http://188.226.176.161/auth/steam/return',
-    realm: 'http://188.226.176.161/',
+    returnURL: realm + 'auth/steam/return',
+    realm: realm,
     apiKey: 'A897DA262595847694E3304C6A93219D',
     passReqToCallback: true
   },
@@ -127,22 +131,6 @@ app.get('/auth/steam/return',
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /**
  * Development Settings
  */
@@ -152,18 +140,23 @@ if (app.get('env') === 'development') {
     //app.use(express.static(path.join(__dirname, '../client')));
     // This covers serving up the index page
     //app.use(express.static(path.join(__dirname, '../client/.tmp')));
-    //app.use(express.static(path.join(__dirname, '../client/app')));
+    //app.use(express.static(path.join(__dirname, '../client/src')));
 
-    app.use('/scripts', express.static(__dirname + '/../client/app/scripts'));
+    app.use('/scripts', express.static(__dirname + '/../client/src/scripts'));
     app.use('/bower_components', express.static(__dirname + '/../client/bower_components'));
     app.use('/styles', express.static(__dirname + '/../client/.tmp/styles'));
-    app.use('/img', express.static(__dirname + '/../client/app/img'));
-    app.use('/views', express.static(__dirname + '/../client/app/views'));
-    app.use('/templates', express.static(__dirname + '/../client/app/templates'));
+    app.use('/img', express.static(__dirname + '/../client/src/img'));
+    app.use('/views', express.static(__dirname + '/../client/src/views'));
+    app.use('/templates', express.static(__dirname + '/../client/src/templates'));
+
+    app.use('/robots.txt', function(req, res) {
+        // Just send the index.html for other files to support HTML5Mode
+        res.sendFile('client/src/robots.txt', { root: '../' });
+    });
 
     app.all('/*', function(req, res, next) {
         // Just send the index.html for other files to support HTML5Mode
-        res.sendFile('client/app/index.html', { root: '../' });
+        res.sendFile('client/src/index.html', { root: '../' });
     });
 
 
@@ -190,8 +183,7 @@ if (app.get('env') === 'production') {
     app.use('/styles', express.static(__dirname + '/dist/styles'));
     app.use('/img', express.static(__dirname + '/dist/img'));
 
-    app.use('/robots.txt', function(req, res, next) {
-        // Just send the index.html for other files to support HTML5Mode
+    app.use('/robots.txt', function(req, res) {
         res.sendFile('/dist/robots.txt', { root: __dirname });
     });
 
