@@ -110,7 +110,17 @@ passport.use(new SteamStrategy({
 
 
 
+/* POST */
+app.post('/logout', function(req, res, next) {
+  var result = {};
 
+  //TODO: Blacklist token
+  res.cookie('access_token', '', { maxAge: 0, httpOnly: true /* TODO: SET secure: true */ });
+
+  result.status = 'success';
+  result.data = '';
+  res.json(result);
+});
 
 
 app.get('/auth/steam', passport.authenticate('steam'));
@@ -142,7 +152,8 @@ if (app.get('env') === 'development') {
     //app.use(express.static(path.join(__dirname, '../client/.tmp')));
     //app.use(express.static(path.join(__dirname, '../client/src')));
 
-    app.use('/scripts', express.static(__dirname + '/../client/src/scripts'));
+    //app.use('/scripts', express.static(__dirname + '/../client/src/scripts'));
+    app.use('/app', express.static(__dirname + '/../client/src/app'));
     app.use('/bower_components', express.static(__dirname + '/../client/bower_components'));
     app.use('/styles', express.static(__dirname + '/../client/.tmp/styles'));
     app.use('/img', express.static(__dirname + '/../client/src/img'));
