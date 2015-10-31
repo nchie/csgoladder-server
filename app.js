@@ -157,6 +157,7 @@ if (app.get('env') === 'development') {
     app.use('/bower_components', express.static(__dirname + '/../client/bower_components'));
     app.use('/styles', express.static(__dirname + '/../client/.tmp/styles'));
     app.use('/img', express.static(__dirname + '/../client/src/img'));
+    app.use('/vid', express.static(__dirname + '/../client/src/vid'));
     app.use('/views', express.static(__dirname + '/../client/src/views'));
     app.use('/templates', express.static(__dirname + '/../client/src/templates'));
 
@@ -193,6 +194,7 @@ if (app.get('env') === 'production') {
     app.use('/scripts', express.static(__dirname + '/dist/scripts'));
     app.use('/styles', express.static(__dirname + '/dist/styles'));
     app.use('/img', express.static(__dirname + '/dist/img'));
+    app.use('/vid', express.static(__dirname + '/dist/vid'));
 
     app.use('/robots.txt', function(req, res) {
         res.sendFile('/dist/robots.txt', { root: __dirname });
