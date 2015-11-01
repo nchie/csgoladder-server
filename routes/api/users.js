@@ -2,7 +2,10 @@ var express = require('express');
 var router = express.Router();
 
 var db = require('app/db')
+var iptools = require('app/tools/iplookup')
 var moment = require('moment');
+
+var requestIp = require('request-ip');
 
 
 /* POST */
@@ -18,6 +21,16 @@ router.get('/me', function(req, res, next) {
 	  		{
 	  			result.status = "success";
 	  			result.data = user;
+ 
+	  			//Lookup country from IP-address and update if changed
+	  			ip = iptools.ipv6to4(requestIp.getClientIp(req));
+	  			iptools.lookup(ip).then(function(result){
+					user.updateAttributes({ countryCode: result.country_code })
+	  			}).catch(function(err){
+	  				console.log(err)
+	  			});
+
+	  			//console.log(ip);
 	  			res.json(result);
 	  		}
 	  		else

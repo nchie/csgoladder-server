@@ -133,6 +133,10 @@ app.get('/auth/steam/return',
       };
 
       var token = jwt.sign(payload, jwt.secret, {expiresIn : 60*60*24});
+
+
+      
+
       res.cookie('access_token', token, { maxAge: 60*60*24*1000, httpOnly: true /* TODO: SET secure: true */ }); 
 
       res.redirect('/'); 
