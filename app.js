@@ -14,12 +14,15 @@ var socket            = require('app/socket')
 
 var api           = require('./routes/api');
 
+var iptools = require('app/tools/iplookup')
+var requestIp = require('request-ip');
+
 var app = express();
 
 
 jwt.secret     = 'disismuhs3cret'
 
-var realm = 'http://127.0.0.1:3000/';
+var realm = 'http://192.168.1.127:3000/';
 
 if (app.get('env') === 'production') {
   realm = 'http://188.226.176.161/';
@@ -57,10 +60,19 @@ passport.use(new SteamStrategy({
   function(req, identifier, profile, done) {
     //console.log(req)
     // asynchronous verification, for effect...
+
     process.nextTick(function () {
       db.User.findOne({where: {openId : identifier}}).then(function(user) {
-        console.log(profile._json.timecreated*1000)
         if(user)
+        {
+          //Lookup country from IP-address and update if changed
+          ip = iptools.ipv6to4(requestIp.getClientIp(req));
+          iptools.lookup(ip).then(function(result){
+            user.updateAttributes({ countryCode: result.countryCode })
+          }).catch(function(err){
+            console.log(err)
+          });
+
           user.updateAttributes(
           {
             displayName: profile._json.personaname,
@@ -70,11 +82,12 @@ passport.use(new SteamStrategy({
           }).then(function(updateduser){
             return done(null, updateduser);
           });
+        }
         else
         {
-          //console.log(profile._json)
-          //If profile is visible, fetch extra data
+          // If profile is visible, fetch extra data
           if(profile._json.communityvisibilitystate === 3 && profile._json.profilestate === 1 )
+          {
             user = db.User.build({
               openId: identifier,
               steamId64: profile._json.steamid,
@@ -87,7 +100,10 @@ passport.use(new SteamStrategy({
               steamCreationDate: new Date(profile._json.timecreated*1000),
               usergroup_name: "member"
             });
+          }
+          // Otherwise only fetch the basics
           else
+          {
             user = db.User.build({
               openId: identifier,
               steamId64: profile._json.steamid,
@@ -97,11 +113,19 @@ passport.use(new SteamStrategy({
               avatarFull: profile._json.avatarfull,
               usergroup_name: "member"
             });
+          }
           user.save().then(function(newuser){
-            console.log("User id: " + newuser.id)
+
+            //Lookup country from IP-address and update if changed
+            ip = iptools.ipv6to4(requestIp.getClientIp(req));
+            iptools.lookup(ip).then(function(result){
+              newuser.updateAttributes({ countryCode: result.countryCode })
+            }).catch(function(err){
+              console.log(err)
+            });
+
             return done(null, newuser);
           })
-          //console.log(user);
         }
       })
     });
@@ -164,6 +188,7 @@ if (app.get('env') === 'development') {
     app.use('/vid', express.static(__dirname + '/../client/src/vid'));
     app.use('/views', express.static(__dirname + '/../client/src/views'));
     app.use('/templates', express.static(__dirname + '/../client/src/templates'));
+    app.use('/fonts', express.static(__dirname + '/../client/src/fonts'));
 
     app.use('/robots.txt', function(req, res) {
         // Just send the index.html for other files to support HTML5Mode
@@ -199,6 +224,7 @@ if (app.get('env') === 'production') {
     app.use('/styles', express.static(__dirname + '/dist/styles'));
     app.use('/img', express.static(__dirname + '/dist/img'));
     app.use('/vid', express.static(__dirname + '/dist/vid'));
+    app.use('/fonts', express.static(__dirname + '/dist/fonts'));
 
     app.use('/robots.txt', function(req, res) {
         res.sendFile('/dist/robots.txt', { root: __dirname });

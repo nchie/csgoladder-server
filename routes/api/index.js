@@ -19,7 +19,10 @@ router.get('/search/:query', function(req, res, next) {
 	{
 	  	db.User.findAll({where: {displayName : { $iLike: req.params.query+'%'}}}).then(function(user) {
 	  		if(user)
+	  		{
+	  			console.log(user);
 	  			res.json(user);
+	  		}
 	  		else
 	  		{
 	  			console.log('User not found')
