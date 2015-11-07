@@ -1,15 +1,21 @@
 var express = require('express');
 var router = express.Router();
 
-var db = require('app/db')
+//var db = require('app/db')
 
 var lobbies = require('./lobbies')
 var users = require('./users')
 var teams = require('./teams')
+var session = require('./session')
+
 
 router.use('/users', users)
 router.use('/lobbies', lobbies)
 router.use('/teams', teams)
+router.use('/session', session)
+
+
+var User = require('app/db/models/User')
 
 
 router.get('/search/:query', function(req, res, next) {
@@ -17,23 +23,21 @@ router.get('/search/:query', function(req, res, next) {
 	console.log(req.params.query+'%')
 	if(req.validtoken)
 	{
-	  	db.User.findAll({where: {displayName : { $iLike: req.params.query+'%'}}}).then(function(user) {
-	  		if(user)
+	  	User.where('steam_name', 'ILIKE', req.params.query+'%').fetchAll().then(function(users) {
+	  		if(users)
 	  		{
-	  			console.log(user);
-	  			res.json(user);
+	  			res.status(200).json(users.toJSON());
 	  		}
 	  		else
 	  		{
-	  			console.log('User not found')
-	  			res.sendStatus(404);
+	  			//This should never happen:
+	  			res.status(404).json({"errors":[{"message":"No users found"}]});
 	  		}
 	  	})
 	}
 	else
 	{
-		console.log('User not found')
-		res.sendStatus(404);
+		res.status(401).json({"errors":[{"message":"This action requires authentication."}]});
 	}
 });
 

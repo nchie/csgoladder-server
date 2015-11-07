@@ -1,135 +1,164 @@
 var express = require('express');
 var router = express.Router();
 
-var db = require('app/db')
+var User = require('app/db/models/User')
 var moment = require('moment');
 
 
-
-/* POST */
-router.get('/me', function(req, res, next) {
-	var result = {};
-
-	//result.status = "INVALID_TOKEN";
-
-	if(req.validtoken)
-	{
-	  	db.User.findOne({where: {id : req.validtoken.user}, include: [db.Team]}).then(function(user) {
-	  		if(user)
-	  		{
-	  			result.status = "success";
-	  			result.data = user;
- 
-	  			//console.log(ip);
-	  			res.json(result);
-	  		}
-	  		else
-	  		{
-	  			console.log('invalid user')
-	  			result.status = "error";
-	  			result.message = 'NO_LOGIN';
-	  			res.json(result);
-	  		}
-	  	})
-	}
-	else
-	{
-		console.log('Forbidden: invalid token')
-		result.status = "error";
-		result.message = 'NO_LOGIN';
-		res.json(result);
-	}
-});
-
-router.get('/:id', function(req, res, next) {
+/**********************************************************/
+/***					GET /api/users/:userid				***/
+/**********************************************************/
+/***	Get info about a specific user.					***/
+/**********************************************************/
+router.get('/:userid', function(req, res, next) {
 	//TODO: Doesn't send everything to users who shouldn't see everything
-
-	var result = {};
-
 	if(req.validtoken)
 	{
-	  	db.User.findOne({where: {id : req.params.id}, include: [db.Team]}).then(function(user) {
+	  		User.where('id', req.params.userid).fetch({
+				withRelated: ['team']
+			}).then(function(user) {
 	  		if(user)
 	  		{
-	  			result.status = "success";
-	  			result.data = user;
-	  			//res.json(result);
+	  			var data = user.toJSON();
+
+	  			//Email should not be sent to others
+	  			delete data.email;
+
 	  			//TODO: Remove fake delay
 				setTimeout(function() {
-					res.json(result);
+					res.status(200).json(data);
 				}, 1000);
 	  		}
 	  		else
 	  		{
 	  			console.log('User not found')
-	  			result.status = "error";
-	  			result.message = 'NO_LOGIN';
-	  			res.json(result);
+	  			next(new createError(404, 'User does not exit.'));
 	  		}
 	  	})
 	}
 	else
 	{
 		console.log('Forbidden: invalid token')
-		result.status = "error";
-		result.message = 'NO_LOGIN';
-		res.json(result);
+		next(new createError(401, 'You do not have permission to perform this action.'));
 	}
 });
 
-router.put('/', function(req, res, next) {
+/**********************************************************/
+/***					PUT /api/users/:userid			***/
+/**********************************************************/
+/***	Update current or another user.					***/
+/**********************************************************/
+router.put('/:userid', function(req, res, next) {
+	function save()
+	{
+		User.forge({id : req.params.userid})
+		.fetch()
+		.then(function(user){
+			user.save({
+				alias: req.body.alias || user.get('alias'),
+				real_name: req.body.real_name || user.get('real_name'),
+				email: req.body.email || user.get('email'),
+			})
+			.then(function () {
+				res.json(user.toJSON());
+			})
+			.catch(function (err) {
+				//TODO: Change to status code 500?
+				next(new createError(400));
+			});
+		})
+	}
 
-	var result = {};
 
-	var date = moment(req.body.birthDate)
-	var startDate = moment("1900-01-01", "YYYY-MM-DD");
-	var endDate = moment("2010-01-01", "YYYY-MM-DD");
-
-	console.log(moment(req.body.birthDate, "YYYYMMDD").toDate())
 	if(req.validtoken)
 	{
-	  	db.User.findOne({where: {id : req.validtoken.user}}).then(function(user) {
-	  		if(user)
-	  		{
-				user.updateAttributes({
-					realName: req.body.realName,
-					email: req.body.email,
-					countryCode: req.body.countryCode,
-					birthDate: new Date(req.body.birthDate)
-				})
-				.then( function(updateduser){
-		  			result.status = "success";
-		  			result.data = "";
-		  			res.json(result);
-				},function(error)
-				{
-		  			result.status = "error";
-		  			result.message = "Database error";
-		  			res.json(result);
-				});
-
-	  		}
-	  		else
-	  		{
-	  			console.log('User not found')
-	  			result.status = "error";
-	  			result.message = 'INVALID_USER';
-	  			res.json(result);
-	  		}
-	  	})
+		if(req.validtoken.user == req.params.userid)
+		{
+			save();
+		}
+		else
+		{
+			//If the user isn't editing himself, we'll need to check his permissions
+			User.where('id', req.validtoken.user).fetch({
+		  		withRelated: ['usergroup']
+		  	}).then(function(user) {
+		  		if(user)
+		  		{
+		  			//If usergroup has rights to edit other users
+		  			if(user.related('usergroup').get('p_edit_users'))
+		  			{
+						save();
+		  			}
+		  			else
+		  			{
+		  				next(new createError(401, 'You do not have permission to perform this action.'));
+		  			}
+		  		}
+		  		else
+		  		{
+		  			next(new createError(404, 'User does not exist.'));
+		  		}
+		  	})
+		}
 	}
 	else
 	{
 		console.log('Forbidden: invalid token')
-		result.status = "error";
-		result.message = 'NO_LOGIN';
-		res.json(result);
+		next(new createError(401, 'You do not have permission to perform this action.'));
 	}
 });
 
 
 
+/**********************************************************/
+/***					DELETE /api/users/:userid			***/
+/**********************************************************/
+/***	Delete current or another user.					***/
+/**********************************************************/
+router.delete('/:userid', function(req, res, next) {
 
+	if(req.validtoken)
+	{
+		//Check if the user is trying to delete itself or others
+
+		//Else
+		//	Check if the user has permission to delete users
+		//	If they do, delete the user!
+		//	Else return res.json({ status: 'error', data: 'NO_PERMISSION' });
+
+	}
+	else
+	{
+		console.log('Forbidden: invalid token')
+		next(new createError(401, 'You do not have permission to perform this action.'));
+	}
+});
+
+/**********************************************************/
+/***		POST /api/users/:userid/a/friendrequest			***/
+/**********************************************************/
+/***	Send friendrequest from current user to 		***/
+/***	another.										***/
+/**********************************************************/
+router.post('/:userid/friendrequest', function(req, res, next) {
+	console.log('FRIENDREQUEST')
+	console.log('Sending friend request to user with id  ' + req.params.userid + '.')
+	//id = req.params.id
+	//TODO: Implement
+	res.send();
+})
+
+/**********************************************************/
+/***		POST /api/users/:userid/a/friendrequest			***/
+/**********************************************************/
+/***	Send teaminvite from current user to another.	***/
+/**********************************************************/
+router.post('/:userid/teaminvite', function(req, res, next) {
+	console.log('TEAMINVITE')
+	//id = req.params.id
+	//TODO: Implement
+	res.send();
+})
 
 
 
