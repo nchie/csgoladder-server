@@ -2,11 +2,27 @@ var express = require('express');
 var router = express.Router();
 
 var User = require('app/db/models/User')
+var Team = require('app/db/models/Team')
+var TeamInvite = require('app/db/models/TeamInvite')
 var moment = require('moment');
+
+var Promise = require('bluebird');
+
+var createError = require('http-errors');
 
 
 /**********************************************************/
-/***					GET /api/users/:userid				***/
+/***					GET /api/users.					***/
+/**********************************************************/
+/***	Get list of users.								***/
+/**********************************************************/
+router.get('/', function(req, res, next) {
+	//TODO: Implement
+	res.send();
+});
+
+/**********************************************************/
+/***					GET /api/users/:userid			***/
 /**********************************************************/
 /***	Get info about a specific user.					***/
 /**********************************************************/
@@ -46,7 +62,7 @@ router.get('/:userid', function(req, res, next) {
 /**********************************************************/
 /***					PUT /api/users/:userid			***/
 /**********************************************************/
-/***	Update current or another user.					***/
+/***	Update a user.									***/
 /**********************************************************/
 router.put('/:userid', function(req, res, next) {
 	function save()
@@ -72,14 +88,14 @@ router.put('/:userid', function(req, res, next) {
 
 	if(req.validtoken)
 	{
-		if(req.validtoken.user == req.params.userid)
+		if(req.validtoken.user.id == req.params.userid)
 		{
 			save();
 		}
 		else
 		{
 			//If the user isn't editing himself, we'll need to check his permissions
-			User.where('id', req.validtoken.user).fetch({
+			User.where('id', req.validtoken.user.id).fetch({
 		  		withRelated: ['usergroup']
 		  	}).then(function(user) {
 		  		if(user)
@@ -111,9 +127,9 @@ router.put('/:userid', function(req, res, next) {
 
 
 /**********************************************************/
-/***					DELETE /api/users/:userid			***/
+/***				DELETE /api/users/:userid			***/
 /**********************************************************/
-/***	Delete current or another user.					***/
+/***	Delete a user.									***/
 /**********************************************************/
 router.delete('/:userid', function(req, res, next) {
 
@@ -134,13 +150,14 @@ router.delete('/:userid', function(req, res, next) {
 	}
 });
 
+
 /**********************************************************/
-/***		POST /api/users/:userid/a/friendrequest			***/
+/***		POST /api/users/:userid/a/friendrequest		***/
 /**********************************************************/
 /***	Send friendrequest from current user to 		***/
 /***	another.										***/
 /**********************************************************/
-router.post('/:userid/friendrequest', function(req, res, next) {
+router.post('/:userid/friendrequests', function(req, res, next) {
 	console.log('FRIENDREQUEST')
 	console.log('Sending friend request to user with id  ' + req.params.userid + '.')
 	//id = req.params.id
@@ -149,17 +166,83 @@ router.post('/:userid/friendrequest', function(req, res, next) {
 })
 
 /**********************************************************/
-/***		POST /api/users/:userid/a/friendrequest			***/
+/***	PUT /api/users/:userid/teaminvite/:teamid		***/
 /**********************************************************/
-/***	Send teaminvite from current user to another.	***/
+/***	Send invite to :team to :user.					***/
 /**********************************************************/
-router.post('/:userid/teaminvite', function(req, res, next) {
+router.put('/:userid/teaminvites/:teamid', function(req, res, next) {
 	console.log('TEAMINVITE')
-	//id = req.params.id
+	//LIST OF CASES:
+	//-User is already on the team
+	//-User does not exist
+	//-Inviter is not in any team
+	//-User is already invited
+	//-Inviter not found (deleted for example)
+	//-Inviter is not logged in
+
+	function Invite()
+	{
+  		var tarUser = User.where('id', req.params.userid).fetch();
+  		var reqUser = User.where('id', req.validtoken.user.id).fetch({withRelated: ['usergroup']});
+  		var team 	= Team.where('id', req.params.teamid).fetch();
+
+  		return Promise.join(reqUser, tarUser, team, function(reqUser, tarUser, team)
+		{
+			console.log('User' + reqUser.get('id') + " trying to invite user"+ tarUser.get('id') + " to team"+team.get('id'));
+			if(tarUser && reqUser && team)
+			{
+				if(true) //TODO: Change this to check if user is admin or not!
+				{
+					if(reqUser.get('team_id') !== team.get('id'))
+					{
+						return Promise.reject(new createError(401, 'You can\'t invite to this team.'));
+					}
+					if(tarUser.get('team_id') === team.get('id'))
+					{
+						return Promise.reject(new createError(409, 'User is already in the team.'));
+					}
+
+					return TeamInvite.forge({team_id : team.get('id'), user_id: tarUser.get('id')}).save()
+					.catch(function(e)
+					{
+						return Promise.reject(new createError(409, 'User is already invited to this team.'));
+					})
+				}
+			}
+			else
+			{
+				return Promise.reject(new createError(404, 'Not found.'));
+			}
+		})
+	}
+
+	if(req.validtoken)
+	{
+		Invite()
+		.then(function(){
+			res.status(200).json();
+		})
+		.catch(function(err){
+			next(err);
+		})
+
+	}
+	else
+	{
+		console.log('Forbidden: invalid token')
+		next(new createError(401, 'You do not have permission to perform this action.'));
+	}
+})
+
+/**********************************************************/
+/***		GET /api/users/:userid/teaminvite 			***/
+/**********************************************************/
+/***	Get all current invites sent to this player.	***/
+/**********************************************************/
+router.get('/:userid/teaminvite', function(req, res, next) {
+	console.log('GET /api/users/:userid/friendrequest');
 	//TODO: Implement
 	res.send();
 })
-
-
 
 module.exports = router;

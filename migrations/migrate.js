@@ -3,9 +3,13 @@ exports.up = function(knex, Promise) {
     schema
         .createTable('team', function(table) {
           table.increments('id').primary();
-          table.string('name').unique();
+          table.string('name').unique().notNullable();
           table.text('description');
           table.timestamp('creation_date').defaultTo(knex.fn.now());
+        })
+
+        .createTable('team_invite', function(table) {
+
         })
 
         .createTable('user', function(table) {
@@ -62,6 +66,12 @@ exports.up = function(knex, Promise) {
             table.integer('team_id').references('team.id').onDelete('SET NULL');
         })
 
+        .table('team_invite', function(table) {
+            table.integer('user_id').references('user.id').onDelete('CASCADE');
+            table.integer('team_id').references('team.id').onDelete('CASCADE');
+            table.primary(['user_id', 'team_id']);
+        })
+
         .table('team', function(table) {
             table.integer('leader_id').references('user.id');
         })
@@ -104,6 +114,11 @@ exports.down = function(knex, Promise) {
             table.dropForeign('team_id');
         })
 
+        .table('team_invite', function(table) {
+            table.dropForeign('user_id');
+            table.dropForeign('team_id');
+        })
+
         .table('team', function(table) {
             table.dropForeign('leader_id');
         })
@@ -134,6 +149,8 @@ exports.down = function(knex, Promise) {
         .dropTableIfExists('forum')
         .dropTableIfExists('forumcategory')
 
+
+        .dropTableIfExists('team_request')
         .dropTableIfExists('match')
         .dropTableIfExists('user')
         .dropTableIfExists('team')

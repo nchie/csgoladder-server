@@ -18,7 +18,9 @@ router.get('/steam/return',
   function(req, res, next) {
     passport.authenticate('steam', function(err, user, info){ 
       var payload = {
-        user: user.id
+        user: {
+          id: user.id
+        },
       };
 
       var token = jwt.sign(payload, config.jwtSecret, {expiresIn : 60*60*24});

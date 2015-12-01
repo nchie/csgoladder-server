@@ -12,7 +12,7 @@ var moment = require('moment');
 router.get('/', function(req, res, next) {
 	if(req.validtoken)
 	{
-	  	User.where('id', req.validtoken.user).fetch({
+	  	User.where('id', req.validtoken.user.id).fetch({
 				withRelated: ['team']
 			}).then(function(user) {
 	  		if(user)
@@ -55,7 +55,7 @@ router.get('/', function(req, res, next) {
 router.put('/', function(req, res, next) {
 	if(req.validtoken)
 	{
-	  	User.where('id', req.validtoken.user).fetch({
+	  	User.where('id', req.validtoken.user.id).fetch({
 				withRelated: ['team']
 			}).then(function(user) {
 	  		if(user)

@@ -15,7 +15,7 @@ var User = require('app/db/models/User')
 router.get('/', function(req, res, next) {
 	if(req.validtoken)
 	{
-	  	User.where('id', req.validtoken.user).fetch({
+	  	User.where('id', req.validtoken.user.id).fetch({
 				withRelated: ['team', 'usergroup']
 			}).then(function(user) {
 	  		if(user)
